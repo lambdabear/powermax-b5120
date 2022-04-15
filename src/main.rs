@@ -91,8 +91,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             // In a loop, write command to the socket and read the data.
             loop {
-                for cmd in 0x01..0x1C {
-                    let msg = [0x0A, cmd, 0x04];
+                // Read cells voltage
+                for cmd in 0x01..0x10 {
+                    let data_len = 2;
+                    let msg = [0x0A, cmd, data_len];
                     println!("Send: {:#X?}", msg);
 
                     if let Err(e) = socket.write_all(&msg).await {
@@ -107,6 +109,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         Ok(n) if n == 0 => return,
                         Ok(n) => {
                             println!("REV: {:#X?}", &buf[..n]);
+                            if n == 3 {
+                                let voltage = u16::from_be_bytes(buf[0], buf[1]);
+                                println!("Cell {}: {}mV", cmd, voltage);
+                            }
                         }
                         Err(e) => {
                             eprintln!("failed to read from socket; err = {:?}", e);
